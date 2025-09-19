@@ -4,7 +4,9 @@ from openpyxl.utils import get_column_letter
 from openpyxl.styles import Alignment, Font, Border, Side
 from openpyxl.worksheet.page import PageMargins
 
-# Função para gerar a lista de datas de 2025
+ANO = 2026
+
+# Função para gerar a lista de datas do ano
 def generate_dates(year=2025):
     dias_semana = ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado', 'Domingo']
     meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
@@ -21,47 +23,56 @@ def generate_dates(year=2025):
 
 # Função para configurar a página de cada dia
 def setup_day_page(ws, day_text):
-    # Alinhamento centralizado e fonte em negrito
-    align_center = Alignment(horizontal='center', vertical='center')
-    bold_font = Font(size=14, bold=True)
-
-    # Estilos de borda (grades)
-    thick_border = Border(
-        left=Side(style='thick'), right=Side(style='thick'),
-        top=Side(style='thick'), bottom=Side(style='thick')
+    align_center = Alignment(horizontal='center', vertical='center', wrap_text=True)
+    bold_font = Font(size=25, bold=True)
+    thin_border = Border(
+        left=Side(style='thin'), right=Side(style='thin'),
+        top=Side(style='thin'), bottom=Side(style='thin')
     )
 
-    # Cabeçalho (Dia | Semana | Mês | Ano)
-    ws.merge_cells('A1:H2')  # Mescla células A1 até H2
+    # Cabeçalho (sem borda)
+    ws.merge_cells('A1:H2')
     header_cell = ws['A1']
     header_cell.value = day_text
     header_cell.alignment = align_center
     header_cell.font = bold_font
-    header_cell.border = thick_border
 
-    # Divisões de escrita (com bordas visíveis)
-    for row in range(4, 40, 9):  # Cria 4 divisões de escrita
+    # Largura das colunas
+    for col in range(1, 9):  # Colunas A até H
+        col_letter = get_column_letter(col)
+        ws.column_dimensions[col_letter].width = 20
+
+    # Divisões de escrita (4 blocos de 9 linhas cada)
+    for row in range(4, 40, 9):
         ws.merge_cells(f'A{row}:H{row+8}')
         for r in range(row, row+9):
             for col in range(1, 9):
                 cell = ws.cell(row=r, column=col)
-                cell.border = thick_border
+                cell.border = thin_border
+                cell.alignment = align_center
+                ws.row_dimensions[r].height = 35
+
 
 # Função principal para criar a agenda
 def create_agenda():
     wb = Workbook()
-    dates = generate_dates()
+    dates = generate_dates(year=ANO)
 
     for i, date in enumerate(dates):
         ws = wb.create_sheet(title=f"Dia {i+1}")
         setup_day_page(ws, date)
+
+        # Configurações de impressão
         ws.page_margins = PageMargins(left=0.5, right=0.5, top=0.5, bottom=0.5)
         ws.print_area = 'A1:H39'
+        ws.page_setup.fitToPage = True
         ws.page_setup.fitToWidth = 1
         ws.page_setup.fitToHeight = 1
+        ws.page_setup.horizontalCentered = True
+        ws.page_setup.verticalCentered = True
 
-    wb.remove(wb['Sheet'])  # Remove a planilha padrão
-    wb.save('Agenda_2025.xlsx')
+    wb.remove(wb['Sheet'])
+    wb.save(f'Agenda_{ANO}.xlsx')
 
-# Executa a função principal
+# Executa a criação da agenda
 create_agenda()
